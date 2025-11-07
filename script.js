@@ -1,21 +1,37 @@
 // Navegação mobile
 const hamburger = document.querySelector('.hamburger');
 const navMenu = document.querySelector('.nav-menu');
+const body = document.body;
 
-if (hamburger) {
+if (hamburger && navMenu) {
     hamburger.addEventListener('click', () => {
         hamburger.classList.toggle('active');
         navMenu.classList.toggle('active');
+        body.classList.toggle('menu-open');
+    });
+    
+    // Fechar menu ao clicar fora
+    document.addEventListener('click', (e) => {
+        if (navMenu.classList.contains('active') && 
+            !navMenu.contains(e.target) && 
+            !hamburger.contains(e.target)) {
+            hamburger.classList.remove('active');
+            navMenu.classList.remove('active');
+            body.classList.remove('menu-open');
+        }
     });
 }
 
 // Fechar menu ao clicar em um link
-document.querySelectorAll('.nav-menu a').forEach(link => {
-    link.addEventListener('click', () => {
-        hamburger.classList.remove('active');
-        navMenu.classList.remove('active');
+if (navMenu) {
+    document.querySelectorAll('.nav-menu a').forEach(link => {
+        link.addEventListener('click', () => {
+            hamburger.classList.remove('active');
+            navMenu.classList.remove('active');
+            body.classList.remove('menu-open');
+        });
     });
-});
+}
 
 // Header no scroll
 window.addEventListener('scroll', () => {
@@ -132,18 +148,21 @@ function animateCounter(element, target, suffix = '', originalText = '', duratio
 
 // Removido efeito parallax - hero section simplificada
 
-// Lazy loading para imagens
-const images = document.querySelectorAll('img');
+// Lazy loading para imagens (excluindo imagens de produtos)
+const images = document.querySelectorAll('img:not(#products img)');
 const imageObserver = new IntersectionObserver((entries, observer) => {
     entries.forEach(entry => {
         if (entry.isIntersecting) {
             const img = entry.target;
-            img.style.opacity = '0';
-            img.style.transition = 'opacity 0.3s ease';
-            
-            img.onload = () => {
-                img.style.opacity = '1';
-            };
+            // Não aplica lazy loading se a imagem já foi carregada
+            if (!img.complete) {
+                img.style.opacity = '0';
+                img.style.transition = 'opacity 0.3s ease';
+                
+                img.onload = () => {
+                    img.style.opacity = '1';
+                };
+            }
             
             observer.unobserve(img);
         }
@@ -188,13 +207,14 @@ window.addEventListener('load', () => {
 const backToTopBtn = document.createElement('button');
 backToTopBtn.innerHTML = '<i class="fas fa-arrow-up"></i>';
 backToTopBtn.className = 'back-to-top';
+backToTopBtn.setAttribute('aria-label', 'Voltar ao topo');
 backToTopBtn.style.cssText = `
     position: fixed;
     bottom: 30px;
     right: 30px;
     width: 50px;
     height: 50px;
-    background: #e74c3c;
+    background: #dc3545;
     color: white;
     border: none;
     border-radius: 50%;
@@ -202,9 +222,39 @@ backToTopBtn.style.cssText = `
     opacity: 0;
     visibility: hidden;
     transition: all 0.3s ease;
-    z-index: 1000;
-    box-shadow: 0 4px 12px rgba(231, 76, 60, 0.3);
+    z-index: 998;
+    box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
 `;
+
+// Responsive adjustments for back-to-top button
+function adjustBackToTopButton() {
+    if (window.innerWidth <= 480) {
+        backToTopBtn.style.width = '45px';
+        backToTopBtn.style.height = '45px';
+        backToTopBtn.style.bottom = '20px';
+        backToTopBtn.style.right = '20px';
+        backToTopBtn.style.fontSize = '1rem';
+    } else if (window.innerWidth <= 360) {
+        backToTopBtn.style.width = '40px';
+        backToTopBtn.style.height = '40px';
+        backToTopBtn.style.bottom = '15px';
+        backToTopBtn.style.right = '15px';
+        backToTopBtn.style.fontSize = '0.9rem';
+    } else {
+        backToTopBtn.style.width = '50px';
+        backToTopBtn.style.height = '50px';
+        backToTopBtn.style.bottom = '30px';
+        backToTopBtn.style.right = '30px';
+        backToTopBtn.style.fontSize = '1.2rem';
+    }
+}
+
+window.addEventListener('resize', adjustBackToTopButton);
+adjustBackToTopButton();
 
 document.body.appendChild(backToTopBtn);
 
@@ -212,9 +262,26 @@ window.addEventListener('scroll', () => {
     if (window.pageYOffset > 300) {
         backToTopBtn.style.opacity = '1';
         backToTopBtn.style.visibility = 'visible';
+        backToTopBtn.style.transform = 'scale(1)';
     } else {
         backToTopBtn.style.opacity = '0';
         backToTopBtn.style.visibility = 'hidden';
+        backToTopBtn.style.transform = 'scale(0.8)';
+    }
+});
+
+// Hover effect
+backToTopBtn.addEventListener('mouseenter', () => {
+    if (window.pageYOffset > 300) {
+        backToTopBtn.style.transform = 'scale(1.1)';
+        backToTopBtn.style.background = '#c82333';
+    }
+});
+
+backToTopBtn.addEventListener('mouseleave', () => {
+    if (window.pageYOffset > 300) {
+        backToTopBtn.style.transform = 'scale(1)';
+        backToTopBtn.style.background = '#dc3545';
     }
 });
 
@@ -263,61 +330,74 @@ function typeWriter(element, text, speed = 100) {
 //     }
 // });
 
-// Corrigir caminhos das imagens de produtos - garante que todas as imagens carreguem
-document.addEventListener('DOMContentLoaded', () => {
+// Garantir que todas as imagens de produtos sejam exibidas corretamente
+function loadProductImages() {
     const productImages = document.querySelectorAll('#products .product-image img');
     
     productImages.forEach((img, index) => {
-        const currentSrc = img.getAttribute('src');
-        const fileName = currentSrc.split('/').pop();
+        // FORÇA a imagem a ser visível - importante usar !important via setProperty
+        img.style.setProperty('opacity', '1', 'important');
+        img.style.setProperty('display', 'block', 'important');
+        img.style.setProperty('visibility', 'visible', 'important');
         
-        // Lista de caminhos alternativos para tentar
-        const alternativePaths = [
-            `./imagens/${fileName}`,
-            `imagens/${fileName}`,
-            `./${fileName}`,
-            fileName
-        ];
-        
-        let pathIndex = 0;
-        let originalOnError = img.onerror;
-        
-        // Função para tentar o próximo caminho
-        const tryNextPath = function() {
-            if (pathIndex < alternativePaths.length) {
-                const newSrc = alternativePaths[pathIndex];
-                console.log(`Tentando carregar imagem ${index + 1}: ${newSrc}`);
-                
-                // Remove o handler anterior para evitar loops
-                img.onerror = null;
-                
-                // Tenta o próximo caminho
-                img.src = newSrc;
-                pathIndex++;
-                
-                // Adiciona novo handler para próxima tentativa
-                img.onerror = tryNextPath;
-            } else {
-                console.error(`Não foi possível carregar a imagem: ${fileName}`);
-                // Mantém o handler original se existir
-                if (originalOnError) {
-                    img.onerror = originalOnError;
-                }
-            }
+        // Handler para quando a imagem carregar
+        const makeVisible = function() {
+            this.style.setProperty('opacity', '1', 'important');
+            this.style.setProperty('display', 'block', 'important');
+            this.style.setProperty('visibility', 'visible', 'important');
         };
         
-        // Se a imagem não carregou, tenta caminhos alternativos
-        if (!img.complete || img.naturalWidth === 0) {
-            // Adiciona handler de erro que tenta caminhos alternativos
-            img.onerror = tryNextPath;
+        if (img.complete && img.naturalWidth > 0) {
+            makeVisible.call(img);
+            console.log(`✓ [${index + 1}] Imagem já carregada: ${img.src}`);
+        } else {
+            img.onload = function() {
+                makeVisible.call(this);
+                console.log(`✓ [${index + 1}] Imagem carregada: ${this.src}`);
+            };
+            img.onerror = function() {
+                console.error(`✗ [${index + 1}] Erro ao carregar: ${this.src}`);
+            };
         }
-        
-        // Handler de sucesso
-        img.onload = function() {
-            console.log(`✓ Imagem carregada: ${img.src}`);
-            img.onerror = null; // Remove handler de erro se carregou com sucesso
-        };
     });
+}
+
+// Executa quando o DOM estiver pronto e também após o carregamento completo
+function initProductImages() {
+    loadProductImages();
+    // Executa múltiplas vezes para garantir
+    setTimeout(loadProductImages, 50);
+    setTimeout(loadProductImages, 100);
+    setTimeout(loadProductImages, 200);
+    setTimeout(loadProductImages, 500);
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initProductImages);
+} else {
+    // DOM já está carregado
+    initProductImages();
+}
+
+// Também executa quando a página terminar de carregar completamente
+window.addEventListener('load', function() {
+    setTimeout(loadProductImages, 100);
+    setTimeout(loadProductImages, 300);
+    setTimeout(loadProductImages, 600);
 });
+
+// Monitora continuamente para garantir que as imagens estejam visíveis
+setInterval(function() {
+    const productImages = document.querySelectorAll('#products .product-image img');
+    productImages.forEach(img => {
+        if (img.complete && img.naturalWidth > 0) {
+            // Força visibilidade apenas se a imagem já carregou
+            const currentOpacity = window.getComputedStyle(img).opacity;
+            if (currentOpacity !== '1') {
+                img.style.setProperty('opacity', '1', 'important');
+            }
+        }
+    });
+}, 1000); // Verifica a cada 1 segundo
 
 console.log('ESJ Bones - Site carregado com sucesso! 🧢');
