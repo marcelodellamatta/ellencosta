@@ -3,6 +3,11 @@ const hamburger = document.querySelector('.hamburger');
 const navMenu = document.querySelector('.nav-menu');
 const body = document.body;
 
+const WHATSAPP_POPUP_DELAY = 20000; // 20 segundos
+const WHATSAPP_POPUP_STORAGE_KEY = 'ecj_whatsapp_popup_dismissed';
+let whatsappPopupTimeout = null;
+let whatsappPopupBackdrop = null;
+
 if (hamburger && navMenu) {
     hamburger.addEventListener('click', () => {
         hamburger.classList.toggle('active');
@@ -99,9 +104,123 @@ document.addEventListener('DOMContentLoaded', () => {
     statNumbers.forEach(stat => {
         statsObserver.observe(stat);
     });
+
+    scheduleWhatsAppPopup();
 });
 
 // Formulário de contato removido
+
+function scheduleWhatsAppPopup(delay = WHATSAPP_POPUP_DELAY) {
+    if (sessionStorage.getItem(WHATSAPP_POPUP_STORAGE_KEY)) {
+        return;
+    }
+
+    if (whatsappPopupTimeout) {
+        clearTimeout(whatsappPopupTimeout);
+    }
+
+    whatsappPopupTimeout = window.setTimeout(() => {
+        showWhatsAppPopup();
+    }, delay);
+}
+
+function showWhatsAppPopup() {
+    if (sessionStorage.getItem(WHATSAPP_POPUP_STORAGE_KEY)) {
+        return;
+    }
+
+    const backdrop = ensureWhatsAppPopup();
+    if (!backdrop) {
+        return;
+    }
+
+    requestAnimationFrame(() => {
+        backdrop.classList.add('active');
+        const focusTarget = backdrop.querySelector('.btn-whatsapp');
+        if (focusTarget) {
+            focusTarget.focus();
+        }
+    });
+}
+
+function ensureWhatsAppPopup() {
+    if (whatsappPopupBackdrop) {
+        return whatsappPopupBackdrop;
+    }
+
+    whatsappPopupBackdrop = document.createElement('div');
+    whatsappPopupBackdrop.className = 'whatsapp-popup-backdrop';
+    whatsappPopupBackdrop.setAttribute('role', 'dialog');
+    whatsappPopupBackdrop.setAttribute('aria-modal', 'true');
+    whatsappPopupBackdrop.setAttribute('aria-label', 'Conversar pelo WhatsApp');
+
+    const popup = document.createElement('div');
+    popup.className = 'whatsapp-popup';
+    popup.innerHTML = `
+        <button type="button" class="close-popup" aria-label="Fechar aviso">
+            <i class="fas fa-times"></i>
+        </button>
+        <div class="popup-icon" aria-hidden="true">
+            <i class="fab fa-whatsapp"></i>
+        </div>
+        <h3>Fale com a ECJ Bones</h3>
+        <p>Precisa tirar dúvidas ou pedir um orçamento? Nossa equipe responde rapidamente pelo WhatsApp.</p>
+        <div class="popup-actions">
+            <a href="https://wa.me/5543996141411?text=Olá!%20Gostaria%20de%20solicitar%20um%20orçamento%20de%20bonés%20personalizados." target="_blank" rel="noopener noreferrer" class="btn btn-whatsapp">
+                <i class="fab fa-whatsapp"></i>
+                Ir para o WhatsApp
+            </a>
+            <button type="button" class="btn btn-secondary dismiss-popup">Agora não</button>
+        </div>
+    `;
+
+    whatsappPopupBackdrop.appendChild(popup);
+    document.body.appendChild(whatsappPopupBackdrop);
+
+    const closeButton = popup.querySelector('.close-popup');
+    const dismissButton = popup.querySelector('.dismiss-popup');
+    const whatsappButton = popup.querySelector('.btn-whatsapp');
+
+    function hide(persist = true) {
+        if (!whatsappPopupBackdrop) {
+            return;
+        }
+
+        whatsappPopupBackdrop.classList.remove('active');
+        document.removeEventListener('keydown', onKeyDown);
+
+        window.setTimeout(() => {
+            if (whatsappPopupBackdrop && whatsappPopupBackdrop.parentNode) {
+                whatsappPopupBackdrop.parentNode.removeChild(whatsappPopupBackdrop);
+            }
+            whatsappPopupBackdrop = null;
+        }, 280);
+
+        if (persist) {
+            sessionStorage.setItem(WHATSAPP_POPUP_STORAGE_KEY, '1');
+        }
+    }
+
+    function onKeyDown(event) {
+        if (event.key === 'Escape') {
+            hide();
+        }
+    }
+
+    closeButton?.addEventListener('click', () => hide());
+    dismissButton?.addEventListener('click', () => hide());
+    whatsappButton?.addEventListener('click', () => hide());
+
+    whatsappPopupBackdrop.addEventListener('click', (event) => {
+        if (event.target === whatsappPopupBackdrop) {
+            hide();
+        }
+    });
+
+    document.addEventListener('keydown', onKeyDown);
+
+    return whatsappPopupBackdrop;
+}
 
 // Smooth scroll para links internos
 document.querySelectorAll('a[href^="#"]').forEach(anchor => {
