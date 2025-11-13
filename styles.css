@@ -2298,7 +2298,7 @@ textarea:focus { outline: 2px solid var(--gold) !important; outline-offset: 2px 
     position: relative !important;
     overflow: hidden !important;
     min-height: 75vh !important;
-    background-image: url('imagens/banner.png') !important;
+    background-image: url('image/banner.png') !important;
     background-size: cover !important;
     background-position: center !important;
     background-repeat: no-repeat !important;

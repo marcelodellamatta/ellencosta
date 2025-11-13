@@ -449,11 +449,62 @@ function typeWriter(element, text, speed = 100) {
 //     }
 // });
 
+// Função para tentar carregar imagem com caminhos alternativos
+function tryLoadImageWithAlternativePaths(img, originalSrc) {
+    // Extrai o nome do arquivo
+    const fileName = originalSrc.split('/').pop();
+    
+    // Lista de caminhos alternativos para tentar
+    const paths = [
+        originalSrc, // Caminho original
+        'image/' + fileName, // Caminho relativo
+        './image/' + fileName, // Caminho relativo com ./
+        '../image/' + fileName, // Um nível acima
+        'Image/' + fileName, // Case diferente relativo
+        './Image/' + fileName, // Case diferente com ./
+        'image/' + fileName.toLowerCase(), // Tudo minúsculo relativo
+    ];
+    
+    let attempt = 0;
+    let hasTriedOriginal = false;
+    
+    function tryNext() {
+        if (attempt >= paths.length) {
+            return; // Todas as tentativas falharam
+        }
+        
+        // Pula o caminho original na primeira tentativa se já foi testado
+        if (attempt === 0 && hasTriedOriginal) {
+            attempt++;
+        }
+        
+        if (attempt >= paths.length) {
+            return;
+        }
+        
+        const testImg = new Image();
+        testImg.onload = function() {
+            img.src = paths[attempt];
+        };
+        testImg.onerror = function() {
+            attempt++;
+            tryNext();
+        };
+        testImg.src = paths[attempt];
+    }
+    
+    // Marca que o original já foi tentado
+    hasTriedOriginal = true;
+    // Começa tentando alternativas (pula o original que já falhou)
+    attempt = 1;
+    tryNext();
+}
+
 // Garantir que todas as imagens de produtos sejam exibidas corretamente
 function loadProductImages() {
     const productImages = document.querySelectorAll('#products .product-image img');
     
-    productImages.forEach((img, index) => {
+    productImages.forEach((img) => {
         // FORÇA a imagem a ser visível - importante usar !important via setProperty
         img.style.setProperty('opacity', '1', 'important');
         img.style.setProperty('display', 'block', 'important');
@@ -466,29 +517,102 @@ function loadProductImages() {
             this.style.setProperty('visibility', 'visible', 'important');
         };
         
+        const originalSrc = img.src || img.getAttribute('src');
+        
+        // Sempre configura o handler de erro ANTES de verificar se já carregou
+        img.onerror = function() {
+            // Tenta caminhos alternativos se falhar
+            tryLoadImageWithAlternativePaths(this, originalSrc);
+        };
+        
         if (img.complete && img.naturalWidth > 0) {
             makeVisible.call(img);
-            console.log(`✓ [${index + 1}] Imagem já carregada: ${img.src}`);
         } else {
             img.onload = function() {
                 makeVisible.call(this);
-                console.log(`✓ [${index + 1}] Imagem carregada: ${this.src}`);
             };
-            img.onerror = function() {
-                console.error(`✗ [${index + 1}] Erro ao carregar: ${this.src}`);
-            };
+            // Verifica se a imagem falhou ao carregar após um tempo
+            setTimeout(() => {
+                if (!img.complete || img.naturalWidth === 0) {
+                    tryLoadImageWithAlternativePaths(img, originalSrc);
+                }
+            }, 1000);
         }
     });
+}
+
+// Corrigir caminhos de imagens que falharam ao carregar
+function fixFailedImages() {
+    const allImages = document.querySelectorAll('img');
+    allImages.forEach((img) => {
+        if (!img.complete || img.naturalWidth === 0) {
+            const originalSrc = img.src || img.getAttribute('src');
+            if (originalSrc && originalSrc.includes('image/')) {
+                img.onerror = function() {
+                    tryLoadImageWithAlternativePaths(this, originalSrc);
+                };
+            }
+        }
+    });
+}
+
+// Corrigir background image do hero
+function fixHeroBackground() {
+    const hero = document.querySelector('#home.hero');
+    if (hero) {
+        const bgImage = window.getComputedStyle(hero).backgroundImage;
+        if (bgImage && bgImage.includes('image/banner.png')) {
+            // Verifica se a imagem do background carrega
+            const testImg = new Image();
+            testImg.onerror = function() {
+                // Tenta caminhos alternativos
+                const paths = [
+                    'image/banner.png',
+                    './image/banner.png',
+                    '../image/banner.png'
+                ];
+                let attempt = 0;
+                function tryNext() {
+                    if (attempt >= paths.length) return;
+                    const test = new Image();
+                    test.onload = function() {
+                        hero.style.backgroundImage = `url('${paths[attempt]}')`;
+                    };
+                    test.onerror = function() {
+                        attempt++;
+                        tryNext();
+                    };
+                    test.src = paths[attempt];
+                }
+                tryNext();
+            };
+            testImg.src = 'image/banner.png';
+        }
+    }
 }
 
 // Executa quando o DOM estiver pronto e também após o carregamento completo
 function initProductImages() {
     loadProductImages();
+    fixFailedImages();
+    fixHeroBackground();
     // Executa múltiplas vezes para garantir
-    setTimeout(loadProductImages, 50);
-    setTimeout(loadProductImages, 100);
-    setTimeout(loadProductImages, 200);
-    setTimeout(loadProductImages, 500);
+    setTimeout(() => {
+        loadProductImages();
+        fixFailedImages();
+    }, 50);
+    setTimeout(() => {
+        loadProductImages();
+        fixFailedImages();
+    }, 100);
+    setTimeout(() => {
+        loadProductImages();
+        fixFailedImages();
+    }, 200);
+    setTimeout(() => {
+        loadProductImages();
+        fixFailedImages();
+    }, 500);
 }
 
 if (document.readyState === 'loading') {
@@ -500,9 +624,19 @@ if (document.readyState === 'loading') {
 
 // Também executa quando a página terminar de carregar completamente
 window.addEventListener('load', function() {
-    setTimeout(loadProductImages, 100);
-    setTimeout(loadProductImages, 300);
-    setTimeout(loadProductImages, 600);
+    setTimeout(() => {
+        loadProductImages();
+        fixFailedImages();
+        fixHeroBackground();
+    }, 100);
+    setTimeout(() => {
+        loadProductImages();
+        fixFailedImages();
+    }, 300);
+    setTimeout(() => {
+        loadProductImages();
+        fixFailedImages();
+    }, 600);
 });
 
 // Monitora continuamente para garantir que as imagens estejam visíveis
@@ -518,5 +652,3 @@ setInterval(function() {
         }
     });
 }, 1000); // Verifica a cada 1 segundo
-
-console.log('ESJ Bones - Site carregado com sucesso! 🧢');
