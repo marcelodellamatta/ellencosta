@@ -1584,10 +1584,11 @@ img {
     /* About CTA */
     .about-cta {
         padding: 2.5rem 1.5rem;
-        margin: 1.5rem 0;
+        margin: 2rem 0;
         border-radius: 12px;
         width: 100%;
         box-sizing: border-box;
+        max-width: 100%;
     }
     
     .cta-content h3 {
@@ -1943,12 +1944,13 @@ img {
     
     /* About CTA */
     .about-cta {
-        padding: 2rem 1.25rem;
-        margin: 1.5rem 0;
+        padding: 2rem 1.5rem;
+        margin: 2rem 0;
         margin-left: 0;
         margin-right: 0;
         border-radius: 10px;
         width: 100%;
+        max-width: 100%;
         box-sizing: border-box;
     }
     
@@ -1956,6 +1958,7 @@ img {
     .container .about-cta {
         margin-left: 0;
         margin-right: 0;
+        width: 100%;
     }
     
     .cta-content h3 {
@@ -2116,18 +2119,20 @@ img {
     
     /* About CTA - Mobile Pequeno */
     .about-cta {
-        padding: 1.5rem 1rem;
-        margin: 1rem 0;
+        padding: 1.8rem 1.4rem;
+        margin: 1.5rem 0;
         margin-left: 0;
         margin-right: 0;
         border-radius: 8px;
         width: 100%;
+        max-width: 100%;
         box-sizing: border-box;
     }
     
     .container .about-cta {
         margin-left: 0;
         margin-right: 0;
+        width: 100%;
     }
     
     .cta-content h3 {
